@@ -1,8 +1,7 @@
 from google.cloud import firestore
 from dotenv import load_dotenv
 import logging
-import os
-
+import re
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -30,7 +29,12 @@ def connect_to_firestore(credentials_path: str) -> None:
         logging.error(f'Erro ao conectar ao Firestore: {e}')
 
 
-def fetch_collection_data(db: str, collection_name: str) -> None:
+def is_valid_email(email: str) -> bool:
+    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(email_regex, email) is not None
+
+
+def fetch_collection_data(db: str, collection_name: str) -> list:
     try:
         if not db:
             raise ConnectionError("Cliente Firestore não inicializado.")
@@ -39,16 +43,20 @@ def fetch_collection_data(db: str, collection_name: str) -> None:
         
         docs = collection_ref.stream()
 
-        results = []
+        emails = set()
         for doc in docs:
-            results.append({doc.id: doc.to_dict()})
+            document_name = 'dataClient'
+            data_document = doc.to_dict().get(document_name)
+            email = data_document.get('email')
+
+            if email and is_valid_email(email):
+                emails.add(email)
         
-        if results:
-            logging.info('Dados recuperados com sucesso:')
-            for result in results:
-                print(result)
+        if emails:
+            logging.info('Dados recuperados com sucesso')
+            return list(emails)
         else:
-            print("Nenhum dado encontrado na coleção.")
+            logging.info('Nenhum dado encontrado na coleção.')
 
     except ConnectionError as e:
         logging.error(f'Erro de conexão: {e}')
@@ -59,9 +67,4 @@ def fetch_collection_data(db: str, collection_name: str) -> None:
     except Exception as e:
         logging.error(f'Erro ao recuperar dados da coleção {collection_name}: {e}')
 
-
-credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-
-db = connect_to_firestore(credentials_path)
-if db:
-    fetch_collection_data(db, 'client')
+    return []
