@@ -13,7 +13,7 @@ SMTP_PORT = 587
 
 
 def send_email(sender_email: str, password: str, recipients: list[str], 
-    subject: str, body_email: str):
+    subject: str, body_email: str) -> None:
     """
     Envia um e-mail utilizando SMTP.
 
@@ -33,10 +33,10 @@ def send_email(sender_email: str, password: str, recipients: list[str],
         server_email.starttls()
         server_email.login(sender_email, password) 
         server_email.sendmail(sender_email, recipients, msg.as_string())
-        logging.info("E-mail enviado com sucesso!")
+        logging.info('E-mail enviado com sucesso!')
 
     except Exception as e:
-        logging.error(f"Erro ao enviar o e-mail: {e}")
+        logging.error(f'Erro ao enviar o e-mail: {e}')
 
     finally:
         server_email.quit()
